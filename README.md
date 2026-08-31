@@ -18,10 +18,13 @@
 - **Private keys never stored** in database
 
 ### ⛽ Phase 3: Real Faucet Automation
-- **Multi-network support**: Sepolia, Monad, Berachain, Linea, Scroll, Movement, Base
+- **Multi-network support**: 15 testnet networks
+  - **Legacy**: Sepolia, Monad, Berachain, Linea, Scroll, Movement, Base
+  - **NEW**: Ink, Robinhood, ZKFair, Manta Pacific, Arbitrum Sepolia, Optimism Sepolia, Polygon Mumbai, Avalanche Fuji
 - **Auto-claim on startup** - gas threshold monitoring
 - **Fallback providers** - seamless network switching
 - **Retry logic** with exponential backoff
+- **Auto-discovery** of new testnets from DefiLlama, GitHub, CoinGecko
 
 ### 🤖 Phase 4: Real Auto-Pilot Task Execution
 - **Task discovery** from leading testnet platforms
@@ -89,12 +92,32 @@ npm start
 | 1 | `/api/google-drive/oauth` | GET | Get OAuth URL |
 | 2 | `/api/wallets/create` | POST/GET | Generate wallets |
 | 3 | `/api/faucet/claim` | POST/PUT/GET | Claim gas & auto-claim |
+| 3 | `/api/testnets/discover` | GET | Discover new testnets |
 | 4 | `/api/autopilot/execute` | GET/POST/PATCH | Task execution |
 | 4 | `/api/signals` | GET | Discover opportunities |
 | 5 | `/api/deploy/real` | POST/PUT | Deploy to platforms |
 | * | `/api/provider-health` | GET | RPC health check |
 | * | `/api/health` | GET | App health status |
 | * | `/api/analytics/log` | POST/GET | Logging & analytics |
+
+### 🔍 Testnet Discovery Endpoints
+
+```bash
+# Get all supported testnets
+GET /api/testnets/discover?action=list
+
+# Auto-discover new testnets
+GET /api/testnets/discover?action=discover
+
+# Get popular testnets (by TVL)
+GET /api/testnets/discover?action=popular&limit=10
+
+# Monitor new testnet launches
+GET /api/testnets/discover?action=monitor
+
+# Get blockchain patterns (chains launching testnets)
+GET /api/testnets/discover?action=patterns
+```
 
 ---
 
