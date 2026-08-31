@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   ArrowRight,
@@ -24,6 +24,9 @@ import { claimFaucet, shouldRequestGas, solveCaptcha } from '@/lib/faucet-engine
 import { createSecureSession, getNoDatabasePolicyMessage } from '@/lib/security';
 import { createTaskLoop, deployFreeApp, executeTask } from '@/lib/auto-pilot';
 import { discoverSignals, generateTaskFromSignal } from '@/lib/ai-scraper';
+import { buildGoogleAuthUrl } from '@/lib/google-drive';
+import { getBestRpcProvider, getRpcFallbackProviders } from '@/lib/rpc-fallback';
+import { deployToHosting } from '@/lib/deploy-hosting';
 
 const stats = [
   { label: 'Wallets per user', value: '1-5' },
@@ -42,6 +45,7 @@ export default function HomePage() {
   const [showSecretKey, setShowSecretKey] = useState(true);
   const [isAutoPilotActive, setIsAutoPilotActive] = useState(false);
   const [googleBackupReady, setGoogleBackupReady] = useState(false);
+  const [rpcProviders, setRpcProviders] = useState<string[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([
     {
       id: 'log-1',
@@ -67,22 +71,30 @@ export default function HomePage() {
   const session = useMemo(() => createSecureSession(wallets.map((wallet) => wallet.id)), [wallets]);
   const nextSignals = useMemo(() => discoverSignals().slice(0, 2), []);
 
-  const handleWalletCreate = () => {
+  useEffect(() => {
+    setRpcProviders(getRpcFallbackProviders());
+  }, []);
+
+  const handleWalletCreate = async () => {
     const nextWallets = generateWallets(walletCount);
+    const backup = createGoogleDriveBackup(nextWallets);
     const entry: ActivityLog = {
       id: `log-${Date.now()}`,
       walletId: nextWallets[0].id,
       walletLabel: nextWallets[0].label,
       event: 'Wallet batch created',
       status: 'success',
-      details: `${nextWallets.length} wallets created with Google Drive backup confirmation`,
+      details: `${nextWallets.length} wallets created • Drive backup ready • Recovery shown once`,
       createdAt: new Date().toISOString(),
     };
 
+    const oauthUrl = buildGoogleAuthUrl();
     setWallets(nextWallets);
     setGoogleBackupReady(true);
     setShowSecretKey(true);
     setActivityLogs((prev) => [entry, ...prev]);
+    console.log('Google OAuth URL', oauthUrl);
+    console.log('Drive backup payload', backup);
   };
 
   const handleActivateAutoPilot = () => {
@@ -114,17 +126,24 @@ export default function HomePage() {
 
   const handleDeploy = () => {
     const deployment = deployFreeApp('autopilot-demo');
+    const host = deployToHosting('vercel', 'autopilot-demo');
     const entry: ActivityLog = {
       id: `deploy-${Date.now()}`,
       walletId: wallets[0]?.id ?? 'system',
       walletLabel: 'Deploy',
       event: 'Free hosting deploy triggered',
       status: 'success',
-      details: `${deployment.target} deployment queued for ${deployment.domain}`,
+      details: `${deployment.target} + ${host.provider} deployment queued for ${host.url}`,
       createdAt: new Date().toISOString(),
     };
 
-    setDeployments((prev) => [deployment, ...prev].slice(0, 5));
+    const nextDeployment: AppDeployment = {
+      ...deployment,
+      status: 'deployed',
+      domain: host.url.replace('https://', ''),
+    };
+
+    setDeployments((prev) => [nextDeployment, ...prev].slice(0, 5));
     setActivityLogs((prev) => [entry, ...prev].slice(0, 10));
   };
 
@@ -277,6 +296,18 @@ export default function HomePage() {
                 <Plus className="h-4 w-4" />
                 Create wallets & backup to Drive
               </button>
+
+              <div className="rounded-2xl border border-slate-700 bg-slate-950/70 p-3 text-xs text-slate-300">
+                <div className="mb-2 font-medium text-slate-100">RPC fallback chain</div>
+                <div className="flex flex-wrap gap-2">
+                  {rpcProviders.map((provider) => (
+                    <span key={provider} className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-cyan-200">
+                      {provider}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-2 text-[11px] text-slate-400">Best active provider: {getBestRpcProvider()}</div>
+              </div>
 
               <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
                 <div className="mb-2 flex items-center gap-2 font-semibold">
