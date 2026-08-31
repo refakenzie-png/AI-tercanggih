@@ -6,11 +6,35 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state');
+    const error = searchParams.get('error');
+    const error_description = searchParams.get('error_description');
+
+    if (error) {
+      return NextResponse.json(
+        { 
+          error: error,
+          details: error_description || 'Google OAuth failed',
+          hint: 'Make sure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI are correctly set in .env.local'
+        },
+        { status: 401 }
+      );
+    }
 
     if (!code) {
       return NextResponse.json(
-        { error: 'Missing authorization code' },
+        { error: 'Missing authorization code', hint: 'Please try again' },
         { status: 400 }
+      );
+    }
+
+    // Validate environment variables
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return NextResponse.json(
+        { 
+          error: 'Google OAuth not configured', 
+          hint: 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.local'
+        },
+        { status: 500 }
       );
     }
 
@@ -23,9 +47,12 @@ export async function GET(request: NextRequest) {
       redirectTo: `/dashboard?token=${accessToken}&state=${state}`,
     });
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'OAuth authentication failed',
+        error: 'OAuth authentication failed',
+        details: errorMsg,
+        hint: 'Check browser console and server logs for more details'
       },
       { status: 500 }
     );

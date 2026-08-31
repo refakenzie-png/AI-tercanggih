@@ -148,3 +148,48 @@ export function useDeployToHosting(appName: string, repository: string, branch: 
     `Deploy to ${platform}`
   );
 }
+
+export function useDiscoverTestnets() {
+  return useAsync(
+    async () => {
+      return callApi('/api/testnets/discover?action=discover');
+    },
+    'Discover Testnets'
+  );
+}
+
+export function useGetPopularTestnets(limit: number = 10) {
+  return useAsync(
+    async () => {
+      return callApi(`/api/testnets/discover?action=popular&limit=${limit}`);
+    },
+    'Get Popular Testnets'
+  );
+}
+
+export function useListAllTestnets() {
+  return useAsync(
+    async () => {
+      return callApi('/api/testnets/discover?action=list');
+    },
+    'List All Testnets'
+  );
+}
+
+export function useMonitorNewTestnets() {
+  return useAsync(
+    async () => {
+      return callApi('/api/testnets/discover?action=monitor');
+    },
+    'Monitor New Testnets'
+  );
+}
+
+export function useGetTestnetPatterns() {
+  return useAsync(
+    async () => {
+      return callApi('/api/testnets/discover?action=patterns');
+    },
+    'Get Popular Patterns'
+  );
+}
