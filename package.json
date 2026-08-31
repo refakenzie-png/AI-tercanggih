@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:integration": "ts-node scripts/test-integration.ts",
+    "test:e2e": "ts-node scripts/test-e2e.ts",
+    "test:all": "npm run test:integration && npm run test:e2e"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.2.0",
